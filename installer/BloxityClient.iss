@@ -40,7 +40,7 @@ Root: HKCU; Subkey: "Software\Classes\bloxity"; ValueType: string; ValueName: "U
 Root: HKCU; Subkey: "Software\Classes\bloxity\shell\open\command"; ValueType: string; ValueName: ""; ValueData: """{app}\{#AppExeName}"" ""%1"""
 
 [Run]
-Filename: "{app}\{#AppExeName}"; Parameters: "{code:GetLaunchParameters}"; Flags: nowait postinstall
+Filename: "{app}\{#AppExeName}"; Parameters: "{code:GetLaunchParameters}"; Flags: nowait
 
 [Code]
 function GetLaunchParameters(Param: String): String;
