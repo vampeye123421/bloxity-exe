@@ -1,0 +1,119 @@
+name: Build and publish Windows client
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: client-release
+  cancel-in-progress: false
+
+jobs:
+  build-and-publish:
+    runs-on: windows-latest
+    steps:
+      - name: Check out client source
+        uses: actions/checkout@v4
+
+      - name: Check release configuration
+        shell: pwsh
+        env:
+          WEBSITE_REPO_TOKEN: ${{ secrets.WEBSITE_REPO_TOKEN }}
+        run: |
+          if ($env:GITHUB_REF_NAME -notmatch '^v\d+\.\d+\.\d+$') { throw 'Release tags must use vMAJOR.MINOR.PATCH (for example v1.0.4).' }
+          if (-not $env:WEBSITE_REPO_TOKEN) { throw 'Add the WEBSITE_REPO_TOKEN repository secret before publishing.' }
+
+      - name: Install Godot and export templates
+        shell: pwsh
+        run: |
+          $version = '4.7-stable'
+          $templatesVersion = '4.7.stable'
+          $godotUrl = "https://github.com/godotengine/godot/releases/download/$version/Godot_v${version}_win64.exe.zip"
+          $templatesUrl = "https://github.com/godotengine/godot/releases/download/$version/Godot_v${version}_export_templates.tpz"
+          Invoke-WebRequest $godotUrl -OutFile "$env:RUNNER_TEMP\godot.zip"
+          Expand-Archive "$env:RUNNER_TEMP\godot.zip" "$env:RUNNER_TEMP\godot" -Force
+          $godot = Get-ChildItem "$env:RUNNER_TEMP\godot" -Filter '*console.exe' -Recurse | Select-Object -First 1
+          if (-not $godot) { throw 'Godot console executable was not found in the downloaded archive.' }
+          "GODOT_EXE=$($godot.FullName)" >> $env:GITHUB_ENV
+          Invoke-WebRequest $templatesUrl -OutFile "$env:RUNNER_TEMP\templates.zip"
+          $templateRoot = Join-Path $env:APPDATA "Godot\export_templates\$templatesVersion"
+          New-Item -ItemType Directory -Force -Path $templateRoot | Out-Null
+          Expand-Archive "$env:RUNNER_TEMP\templates.zip" "$env:RUNNER_TEMP\templates" -Force
+          Copy-Item "$env:RUNNER_TEMP\templates\templates\*" $templateRoot -Recurse -Force
+
+      - name: Export embedded-PCK client
+        shell: pwsh
+        env:
+          CLIENT_TAG: ${{ github.ref_name }}
+        run: |
+          $version = $env:CLIENT_TAG.TrimStart('v')
+          $project = Get-Content project.godot -Raw
+          if ($project -match '(?m)^config/version=') {
+            $project = [regex]::Replace($project, '(?m)^config/version=.*$', "config/version=`"$version`"")
+          } else {
+            $project = [regex]::Replace($project, '(?m)^config/name=.*$', "$&`nconfig/version=`"$version`"")
+          }
+          Set-Content project.godot $project -NoNewline
+          New-Item -ItemType Directory -Force build | Out-Null
+          & $env:GODOT_EXE --headless --path . --editor --import
+          if ($LASTEXITCODE -ne 0) { throw 'Godot project import failed.' }
+          & $env:GODOT_EXE --headless --path . --export-release 'Windows Desktop' 'build/BloxityClient.exe'
+          if ($LASTEXITCODE -ne 0) { throw 'Godot Windows export failed.' }
+          if (-not (Test-Path 'build/BloxityClient.exe')) { throw 'Godot export did not produce the client executable.' }
+
+      - name: Install Inno Setup
+        shell: pwsh
+        run: choco install innosetup --yes --no-progress
+
+      - name: Build single-file installer
+        shell: pwsh
+        env:
+          CLIENT_TAG: ${{ github.ref_name }}
+        run: |
+          $version = $env:CLIENT_TAG.TrimStart('v')
+          & "$env:ProgramFiles(x86)\Inno Setup 6\ISCC.exe" "/DAppVersion=$version" 'installer/BloxityClient.iss'
+          if ($LASTEXITCODE -ne 0) { throw 'Inno Setup installer build failed.' }
+          if (-not (Test-Path 'dist/BloxityClientSetup.exe')) { throw 'Installer output was not created.' }
+
+      - name: Calculate installer checksum
+        id: checksum
+        shell: pwsh
+        env:
+          CLIENT_TAG: ${{ github.ref_name }}
+        run: |
+          $hash = (Get-FileHash 'dist/BloxityClientSetup.exe' -Algorithm SHA256).Hash.ToLowerInvariant()
+          "sha256=$hash" >> $env:GITHUB_OUTPUT
+          "version=$($env:CLIENT_TAG.TrimStart('v'))" >> $env:GITHUB_OUTPUT
+
+      - name: Update website client manifest
+        shell: pwsh
+        env:
+          WEBSITE_REPO_TOKEN: ${{ secrets.WEBSITE_REPO_TOKEN }}
+          CLIENT_VERSION: ${{ steps.checksum.outputs.version }}
+          CLIENT_SHA256: ${{ steps.checksum.outputs.sha256 }}
+        run: |
+          git clone "https://x-access-token:$env:WEBSITE_REPO_TOKEN@github.com/vampeye123421/Bloxity.git" website
+          $manifestPath = 'website/public/client/version.json'
+          $installerPath = 'website/public/client/windows/BloxityClientInstaller.exe'
+          $installerSize = (Get-Item 'dist/BloxityClientSetup.exe').Length
+          if ($installerSize -ge 95MB) { throw 'Installer is too large for the website Git repository (95 MiB safety limit); configure dedicated object storage before publishing.' }
+          Copy-Item 'dist/BloxityClientSetup.exe' $installerPath -Force
+          $manifest = Get-Content $manifestPath -Raw | ConvertFrom-Json
+          $assetUrl = 'https://bloxity-9xk2.onrender.com/client/windows/BloxityClientInstaller.exe'
+          $manifest.version = $env:CLIENT_VERSION
+          $manifest.client_update_url = $assetUrl
+          $manifest.client_sha256 = $env:CLIENT_SHA256
+          $manifest.download_url.windows = '/client/windows/BloxityClientInstaller.exe'
+          $manifest.release_notes = "Bloxity Client $env:CLIENT_VERSION"
+          $manifest | ConvertTo-Json -Depth 8 | Set-Content $manifestPath -Encoding utf8
+          Push-Location website
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add public/client/version.json public/client/windows/BloxityClientInstaller.exe
+          git commit -m "Publish Bloxity Client $env:CLIENT_VERSION"
+          git push origin HEAD:main
+          Pop-Location

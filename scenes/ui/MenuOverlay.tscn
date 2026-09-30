@@ -1,0 +1,64 @@
+[gd_scene format=3 uid="uid://dhvp77wkemsrg"]
+
+[ext_resource type="Script" uid="uid://b6sjln6mplhdw" path="res://scripts/ui/menu_overlay.gd" id="1_mcc81"]
+[ext_resource type="Script" uid="uid://ba4i4f5uxom0w" path="res://scripts/ui/leaderboard_view.gd" id="2_yxgow"]
+[ext_resource type="Script" uid="uid://demydy83n045y" path="res://scripts/ui/settings_view.gd" id="3_uuj6p"]
+
+[node name="MenuOverlay" type="CanvasLayer" unique_id=2089029985]
+script = ExtResource("1_mcc81")
+
+[node name="MenuButton" type="Button" parent="." unique_id=1942292391]
+offset_left = 12.0
+offset_top = 12.0
+offset_right = 112.0
+offset_bottom = 44.0
+text = "☰ Menu"
+
+[node name="MenuPanel" type="PanelContainer" parent="." unique_id=433649896]
+visible = false
+offset_left = 12.0
+offset_top = 56.0
+offset_right = 372.0
+offset_bottom = 540.0
+
+[node name="VBox" type="VBoxContainer" parent="MenuPanel" unique_id=988072332]
+layout_mode = 2
+theme_override_constants/separation = 0
+
+[node name="TabBar" type="HBoxContainer" parent="MenuPanel/VBox" unique_id=2015313756]
+layout_mode = 2
+theme_override_constants/separation = 4
+
+[node name="BtnLeaderboard" type="Button" parent="MenuPanel/VBox/TabBar" unique_id=285050832]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "Leaderboard"
+
+[node name="BtnSettings" type="Button" parent="MenuPanel/VBox/TabBar" unique_id=442474933]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "Settings"
+
+[node name="Divider" type="HSeparator" parent="MenuPanel/VBox" unique_id=1373585152]
+layout_mode = 2
+
+[node name="Content" type="MarginContainer" parent="MenuPanel/VBox" unique_id=635643545]
+layout_mode = 2
+size_flags_vertical = 3
+theme_override_constants/margin_left = 8
+theme_override_constants/margin_top = 8
+theme_override_constants/margin_right = 8
+theme_override_constants/margin_bottom = 8
+
+[node name="LeaderboardView" type="Control" parent="MenuPanel/VBox/Content" unique_id=198788020]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+script = ExtResource("2_yxgow")
+
+[node name="SettingsView" type="Control" parent="MenuPanel/VBox/Content" unique_id=1033067294]
+visible = false
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+script = ExtResource("3_uuj6p")

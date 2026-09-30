@@ -1,0 +1,59 @@
+[gd_scene format=3 uid="uid://b6ruoswgvic4s"]
+
+[ext_resource type="Script" uid="uid://csu787w70dewg" path="res://scripts/player.gd" id="1"]
+[ext_resource type="PackedScene" uid="uid://doqbidjeguvv3" path="res://scenes/ChatBubble.tscn" id="2_v6fml"]
+
+[sub_resource type="CapsuleShape3D" id="CapsuleShape3D_1"]
+radius = 0.4
+height = 1.8
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_p0vlq"]
+albedo_color = Color(0.9, 0.35, 0.25, 1)
+roughness = 0.6
+
+[sub_resource type="CapsuleMesh" id="CapsuleMesh_1"]
+radius = 0.4
+height = 1.8
+
+[sub_resource type="SphereMesh" id="SphereMesh_v6fml"]
+radius = 0.07
+height = 0.14
+
+[sub_resource type="SphereMesh" id="SphereMesh_p0vlq"]
+radius = 0.07
+height = 0.14
+
+[node name="Player" type="CharacterBody3D" unique_id=342462665]
+script = ExtResource("1")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="." unique_id=1638937842]
+shape = SubResource("CapsuleShape3D_1")
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="." unique_id=591717060]
+material_override = SubResource("StandardMaterial3D_p0vlq")
+mesh = SubResource("CapsuleMesh_1")
+
+[node name="Camera3D" type="Camera3D" parent="." unique_id=558777719]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.54198545, -0.37034652)
+current = true
+fov = 80.0
+
+[node name="EyeRight" type="MeshInstance3D" parent="." unique_id=264918893]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.15, 0.55, -0.38)
+mesh = SubResource("SphereMesh_v6fml")
+
+[node name="NameLabel" type="Label3D" parent="." unique_id=969233015]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.35, 0)
+pixel_size = 0.007
+billboard = 1
+no_depth_test = true
+text = "Player"
+font_size = 48
+
+[node name="EyeLeft" type="MeshInstance3D" parent="." unique_id=406739175]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.15, 0.55, -0.38)
+mesh = SubResource("SphereMesh_p0vlq")
+
+[node name="ChatBubble" parent="." unique_id=1814648057 instance=ExtResource("2_v6fml")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.75, 0)
+visible = false

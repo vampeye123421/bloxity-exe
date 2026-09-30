@@ -1,0 +1,13 @@
+.godot/
+addons/godot_mcp/cache/
+.import/
+build/
+dist/
+*.exe
+*.pck
+*.zip
+*.dmg
+*.bak
+*.tmp
+.DS_Store
+Thumbs.db

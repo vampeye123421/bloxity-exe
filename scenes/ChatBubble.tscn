@@ -1,0 +1,21 @@
+[gd_scene format=3 uid="uid://doqbidjeguvv3"]
+
+[ext_resource type="Script" uid="uid://d0pj8q47xw5j1" path="res://scripts/chat_bubble.gd" id="1_eot2d"]
+
+[node name="ChatBubble" type="Node3D" unique_id=1814648057]
+script = ExtResource("1_eot2d")
+
+[node name="Viewport" type="SubViewport" parent="." unique_id=838790537]
+transparent_bg = true
+size = Vector2i(200, 80)
+
+[node name="Root" type="Control" parent="Viewport" unique_id=1364379825]
+layout_mode = 3
+anchors_preset = 0
+
+[node name="Text" type="Label" parent="Viewport/Root" unique_id=536284712]
+layout_mode = 0
+
+[node name="Tail" type="Polygon2D" parent="Viewport/Root" unique_id=484401575]
+
+[node name="Sprite" type="Sprite3D" parent="." unique_id=394389010]
