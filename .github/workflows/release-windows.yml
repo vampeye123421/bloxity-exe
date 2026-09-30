@@ -69,7 +69,9 @@ jobs:
 
       - name: Install Inno Setup
         shell: pwsh
-        run: choco install innosetup --yes --no-progress
+        run: |
+          choco install innosetup --yes --no-progress --installargs '"/VERYSILENT /SUPPRESSMSGBOXES /NORESTART /SP-"'
+          if ($LASTEXITCODE -ne 0) { throw 'Inno Setup installation failed.' }
 
       - name: Build single-file installer
         shell: pwsh
@@ -77,7 +79,17 @@ jobs:
           CLIENT_TAG: ${{ github.ref_name }}
         run: |
           $version = $env:CLIENT_TAG.TrimStart('v')
-          & "$env:ProgramFiles(x86)\Inno Setup 6\ISCC.exe" "/DAppVersion=$version" 'installer/BloxityClient.iss'
+          $iscc = (Get-Command ISCC.exe -ErrorAction SilentlyContinue).Source
+          if (-not $iscc) {
+            $candidates = @(
+              "${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe",
+              "$env:ProgramFiles\Inno Setup 6\ISCC.exe",
+              "$env:ChocolateyInstall\lib\innosetup\tools\ISCC.exe"
+            )
+            $iscc = $candidates | Where-Object { Test-Path $_ } | Select-Object -First 1
+          }
+          if (-not $iscc) { throw 'Inno Setup installation succeeded, but ISCC.exe was not found.' }
+          & $iscc "/DAppVersion=$version" 'installer/BloxityClient.iss'
           if ($LASTEXITCODE -ne 0) { throw 'Inno Setup installer build failed.' }
           if (-not (Test-Path 'dist/BloxityClientSetup.exe')) { throw 'Installer output was not created.' }
 
