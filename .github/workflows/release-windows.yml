@@ -119,8 +119,8 @@ jobs:
           $manifest = Get-Content $manifestPath -Raw | ConvertFrom-Json
           $assetUrl = 'https://bloxity-9xk2.onrender.com/client/windows/BloxityClientInstaller.exe'
           $manifest.version = $env:CLIENT_VERSION
-          $manifest.client_update_url = $assetUrl
-          $manifest.client_sha256 = $env:CLIENT_SHA256
+          $manifest | Add-Member -NotePropertyName client_update_url -NotePropertyValue $assetUrl -Force
+          $manifest | Add-Member -NotePropertyName client_sha256 -NotePropertyValue $env:CLIENT_SHA256 -Force
           $manifest.download_url.windows = '/client/windows/BloxityClientInstaller.exe'
           $manifest.release_notes = "Bloxity Client $env:CLIENT_VERSION"
           $manifest | ConvertTo-Json -Depth 8 | Set-Content $manifestPath -Encoding utf8
